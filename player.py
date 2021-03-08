@@ -12,8 +12,7 @@ from mutagen.mp3 import MP3
 janela = Tk()
 janela.title('MP3 Player')
 
-#Caso queira adicionar o icone ao programa, cole nessa área o caminho da pasta MP3-Player
-#janela.iconbitmap('MP3-Player/icon.ico')
+janela.iconbitmap(r'icon.ico')
 
 #Posicionando a janela no meio da tela
 largura = 375

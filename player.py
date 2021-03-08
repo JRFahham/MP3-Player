@@ -1,5 +1,6 @@
 from tkinter import *
 from tkinter import filedialog
+from tkinter import messagebox
 import tkinter.ttk as ttk
 import pygame
 import base64
@@ -11,6 +12,10 @@ from mutagen.mp3 import MP3
 janela = Tk()
 janela.title('MP3 Player')
 
+#Caso queira adicionar o icone ao programa, cole nessa área o caminho da pasta MP3-Player
+#janela.iconbitmap('MP3-Player/icon.ico')
+
+#Posicionando a janela no meio da tela
 largura = 375
 altura = 340
 
@@ -19,15 +24,100 @@ altura_screen = janela.winfo_screenheight()
 posx = largura_screen/2 - largura/2
 posy = altura_screen/2 - altura/2
 janela.geometry('%dx%d+%d+%d' % (largura, altura, posx, posy))
-
+#Bloqueando a opção de mudar o tamanho da janela
 janela.resizable(False, False)
 
 pygame.mixer.init()
 
+lista_criada = []
+caminho = []
+novo_caminho = []
+arquivo = []
+
+#Formatando a forma que o nome da música aparece, separando o nome da música e o caminho
+def formatar_nome(nome):
+    try:
+        for path in nome:
+            dado = path.split('/')
+            tam = len(dado)
+            tama = len(arquivo)
+            arquivo.append(dado[tam-1])
+            dado.pop()
+            dado.append('')
+            dado = '/'.join(dado)
+            novo_caminho.append(dado)
+    except:
+        messagebox.showerror('Erro', 'Erro ao alterar o nome')
+    finally:
+        caminho.pop(0)
+        return arquivo[tama]
+
+
+def formatar_lista(nome):
+    try:
+        dado = nome.split('/')
+        tam = len(dado)
+        tama = len(arquivo)
+        arquivo.append(dado[tam-1])
+        dado.pop()
+        dado.append('')
+        dado = '/'.join(dado)
+        novo_caminho.append(dado)
+        print(novo_caminho)
+        print(arquivo)
+        print(tama)
+        print('='*30)
+    except:
+        messagebox.showerror('Erro', 'Erro ao alterar o nome')
+    finally:
+        return arquivo[tama]
+
+
+def desformatar_nome(nome):
+    p = display.curselection()
+    p1 = p[0]
+    play = novo_caminho[p1] + nome
+    return play
+
+
+def nova_lista():
+    try:
+        a = open('Lista de reprodução.txt', 'wt+')
+    except:
+        messagebox.showerror('Erro', 'Houve um erro na criação do arquivo')
+    else:
+        for i, path in enumerate(novo_caminho):
+            a.write(f'{path}{arquivo[i]}\n')
+    finally:
+        a.close()
+
+
+def ler_lista():
+    try:
+        a = open('Lista de reprodução.txt', 'rt')
+        display.delete(0, END)
+        lista_criada.clear()
+        novo_caminho.clear()
+        arquivo.clear()
+    except:
+        messagebox.showerror('Erro', 'Erro ao ler o arquivo')
+    else:
+        for linha in a:
+            linha = linha.replace('\n', '')
+            lista_criada.append(linha)
+        for file in lista_criada:
+            name = formatar_lista(file)
+            display.insert(END, name)
+    finally:
+        a.close()
+
 
 def add_song():
     song = filedialog.askopenfilename(initialdir='Downloads/', title='Escolha uma música', filetypes=(('mp3 Files', '*.mp3'), ))
-    display.insert(END, song)
+    caminho.append(song)
+    song_name = formatar_nome(caminho)
+    
+    display.insert(END, song_name)
 
     #Song Status Bar
     song_wave.config(image=adding_music_img)
@@ -39,6 +129,7 @@ def add_songs():
 
     for song in songs:
         display.insert(END, song)
+        caminho.append(song)
 
     #Song Status Bar
     song_wave.config(image=adding_music_img)
@@ -62,7 +153,8 @@ def play_time():
     current_time = pygame.mixer.music.get_pos() / 1000
     converted_current_time = time.strftime('%M:%S', time.gmtime(current_time))
 
-    song = display.get(ACTIVE)
+    song_name = display.get(ACTIVE)
+    song = desformatar_nome(song_name)
 
     song_mut = MP3(song)
 
@@ -117,7 +209,9 @@ def play_time():
                     display.selection_set(0, last=None)
 
                     next_one = display.curselection()
-                    song = display.get(next_one)
+                    song_name = display.get(next_one)
+                    song = desformatar_nome(song_name)
+
                     pygame.mixer.music.load(song)
                     pygame.mixer.music.play(loops=0)
             
@@ -131,7 +225,9 @@ def play_time():
                 display.selection_set(tocar, last=None)
 
                 next_one = display.curselection()
-                song = display.get(next_one)
+                song_name = display.get(next_one)
+                song = desformatar_nome(song_name)
+
                 pygame.mixer.music.load(song)
                 pygame.mixer.music.play(loops=0)
 
@@ -158,7 +254,8 @@ def play(is_playing):
     if playing:
         pass
     else:
-        song = display.get(ANCHOR)
+        song_name = display.get(ANCHOR)
+        song = desformatar_nome(song_name)
 
         pygame.mixer.music.load(song)
         pygame.mixer.music.play(loops=0)
@@ -243,13 +340,16 @@ def next_song():
         display.selection_set(0, last=None)
 
         next_one = display.curselection()
-        song = display.get(next_one)
+        song_name = display.get(next_one)
+        song = desformatar_nome(song_name)
+
         pygame.mixer.music.load(song)
         pygame.mixer.music.play(loops=0)
 
     else:
-        song = display.get(next_one)
-        print(f'Song: {song}')
+        song_name = display.get(next_one)
+        song = desformatar_nome(song_name)
+
         pygame.mixer.music.load(song)
         pygame.mixer.music.play(loops=0)
         display.selection_clear(0, END)
@@ -278,12 +378,16 @@ def previous_song():
         display.selection_set(quant-1, last=None)
 
         next_one = display.curselection()
-        song = display.get(next_one)
+        song_name = display.get(next_one)
+        song = desformatar_nome(song_name)
+
         pygame.mixer.music.load(song)
         pygame.mixer.music.play(loops=0)
     
     else:
-        song = display.get(next_one)
+        song_name = display.get(next_one)
+        song = desformatar_nome(song_name)
+
         pygame.mixer.music.load(song)
         pygame.mixer.music.play(loops=0)
         display.selection_clear(0, END)
@@ -293,9 +397,19 @@ def previous_song():
     global repeat
     repeat = False
 
+def remover_song_content():
+    p = display.curselection()
+    song_content = p[0]
+    novo_caminho.pop(song_content)
+    arquivo.pop(song_content)
+    print(novo_caminho)
+    print(arquivo)
+
 
 def remove_song():
+    remover_song_content()
     stop()
+
     display.delete(ANCHOR)
     pygame.mixer.music.stop()
 
@@ -304,6 +418,8 @@ def remove_song():
     song_status.config(text='Música deletada')
 
 def remove_all_songs():
+    novo_caminho.clear()
+    arquivo.clear()
     stop()
     display.delete(0, END)
     pygame.mixer.music.stop()
@@ -314,7 +430,8 @@ def remove_all_songs():
 
 
 def slide(x):
-    song = display.get(ACTIVE)
+    song_name = display.get(ACTIVE)
+    song = desformatar_nome(song_name)
 
     pygame.mixer.music.load(song)
     pygame.mixer.music.play(loops=0, start=int(music_slider.get()))
@@ -379,7 +496,9 @@ def repeat_1_music(is_repeat):
 
     else:
         repeat = True
-        song = display.get(ANCHOR)
+
+        song_name = display.get(ANCHOR)
+        song = desformatar_nome(song_name)
 
         pygame.mixer.music.load(song)
         pygame.mixer.music.play(loops=-1)
@@ -457,16 +576,46 @@ def instrucao():
     top = Toplevel()
     top.title('Instruções')
 
-    tx = Label(top, text='''Atenção
+    largura = 780
+    altura = 320
+
+    largura_screen = janela.winfo_screenwidth()
+    altura_screen = janela.winfo_screenheight()
+    posx = largura_screen/2 - largura/2
+    posy = altura_screen/2 - altura/2
+    top.geometry('%dx%d+%d+%d' % (largura, altura, posx, posy))
+
+    janela.resizable(False, False)
+
+    #Criando um frame com scrollbar
+    main_frame = Frame(top)
+    main_frame.pack(fill=BOTH, expand=1)
+
+    canvas_window = Canvas(main_frame)
+    canvas_window.pack(side=LEFT, fill=BOTH, expand=1)
+
+    frame_scrollbar = Scrollbar(main_frame, orient=VERTICAL, command=canvas_window.yview)
+    frame_scrollbar.pack(side=RIGHT, fill=Y)
+
+    canvas_window.configure(yscrollcommand=frame_scrollbar.set)
+    canvas_window.bind('<Configure>', lambda e: canvas_window.configure(scrollregion = canvas_window.bbox('all')))
+
+    frame_canvas = Frame(canvas_window)
+
+    canvas_window.create_window((0,0), window= frame_canvas, anchor='nw')
+
+    #Adicionando conteúdo ao frame
+    tx = Label(frame_canvas, text='''Atenção
 Este programa só abre e reproduz arquivos como formato .mp3
 Quaisquer outros formatos não seram abertos, e podem gerar um erro no programa''')
     tx.pack()
 
-    instrucao_frame = Frame(top)
+    instrucao_frame = Frame(frame_canvas)
     instrucao_frame.pack()
 
-    bt = Button(top, text='OK, entendi', command=top.destroy)
+    bt = Button(frame_canvas, text='OK, entendi', command=top.destroy)
     bt.pack()
+
 
     img_label01 = Label(instrucao_frame, image=add_bt_img, bd=1, relief=GROOVE)
     img_label01.grid(row=0, column=0, padx=5, pady=5)
@@ -544,6 +693,13 @@ OBS:
 Ele costuma repetir a mesma música se for uma lista pequena, então tente usá-lo depois de adicionar no minino 10 músicas''', bd=1, relief=SOLID, width=100, justify = LEFT, anchor=W)
     text_label10.grid(row=9, column=1, padx=5, pady=5, sticky=W)
 
+    img_label11 = Label(instrucao_frame, image=save_bt_img, bd=1, relief=GROOVE)
+    img_label11.grid(row=10, column=0, padx=5, pady=5)
+
+    text_label11 = Label(instrucao_frame, text='''Aperte o este botão para  salvar a lista atual que aparece no display.
+Ele ira criar um arquivo chamado Lista de Reprodução.txt, nele terá como você salvar e rever a lista criada''', bd=1, relief=SOLID, width=100, justify = LEFT, anchor=W)
+    text_label11.grid(row=10, column=1, padx=5, pady=5, sticky=W)
+
 
 #Display music
 display = Listbox(janela, bg='black', fg='green', width=62, height=12, selectbackground='green', selectforeground='black')
@@ -555,7 +711,6 @@ music_slider.pack(pady=5)
 
 
 #Adicionando imagens codificadas em base64 para que possa rodar em um executável 
-
 pause_img = 'iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAYAAAA7MK6iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH5QEGFw4YBtBW0AAAA6FJREFUSMe1l89rG0cUxz9vZlcmhERqm+K6RmAWcoqb4lt7CP4hCRdCmoN9qntt01vvuZQU2v4FPaQ+Oyf3UEIoRpYS95KbSW2fAlZMQzAJJMgNJkTamdeDVvIPyZacyl8Y2Nl9bz4z82Zm30g+PyH0qEwmzeLiH9rp2+zsdalWd3ptiqCbgYhQLN5XgCgasWEYZpxz7wNnE5Nda+2r1dW/q5XKlgMoFCZFVY9v96gRe+8plVZURLDWDnnvp1S1AFwGBoEziekb4DmwJiJFa005jt22qpLLjYsx5mQjLpf/0oGBVEZE5pxz3wCjgO1g+h7wMTCmql/HsdsQkfmBgdRCrVavHjUwG0UjBz5YaygW76sx5lIcu1+B74EhoHPXD8oAHwFfOOdHjTHrm5tPXly8GLVNfVtjS0tlFZHPvPd3gGs9Ajt14Jr3/o4x8vnSUlk7GbRiurz8QI0xl1T1dhLL/6tPvNfbxpjR5eUH6r1vB5dKK5pKhRnv/S99gu6D+59TqTBTKq20Rm6gsWVEhHo9ngOu9hHa1NV6PZ5rcgBorjpr7RDwCNAuxSXlqPpR5VEQ2KEmc3+Mp2hsmeP0VkRuici3wDawLSI3ROQW8LaL76hzfqo11ZlMmigascnhYLs4O6AYhsHvwGvgdRgGi0Ax+XacrKoWomjEptPnG2/CMPwAWO1hunZF5EoQBBeAx8DjIAguiMgVYLcH/9WE1Vhcydk7+K4r5wQaTFit7XSWvbP3NHUmYb3TqdQXNcG7NP4yp603CasBtta+ovFrO209T1iY2dnrks0OV4G1Hp1jYyQmWanJc9yj71o2O1ydmflSTLW6Q6Wy5USkp70IFOr1eBY4B5yr1+MZoKczQESKlcqW29n5dy8RSDKHDeDTY5wHVPWH5NkAqOpv++vHaCNh7BkXCpMSx25bROYB36UBcwhyuN5JXkTm49htFwqTsr/XqCphGCwA93qM10l0LwyDhSbnwPTkcuNSq9WrxpibwHofoWvGmJu1Wr2ay4230qwW2BhDPj8h3vsNY+RGn+Brxsh33vuNfH7iQMbZFpvp6SnxXh8aY74C7tI95p3kgbvGmDnv9eH0dK4t02zLMlWVKBqRzc0nL1Kp8E/v9RkwDHxI90XkgHUR+SmVCn+MY/dPPj/RMbnvKaEPAjvkXH8Teul2dzp8hXn69FnHK0w2O3yiK0zXu5OqtvKydPq8r1S2XgIvD8/O2NhlaYatGxTgP2MBt+f97vb3AAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDIxLTAxLTA2VDIzOjE0OjI0KzAwOjAwvWwfOQAAACV0RVh0ZGF0ZTptb2RpZnkAMjAyMS0wMS0wNlQyMzoxNDoyNCswMDowMMwxp4UAAAAASUVORK5CYII='
 
 unpause_img = 'iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAYAAAA7MK6iAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH5QEGFw4ZcddmRgAABC5JREFUSMe9l89rXFUUxz/n3vcm1GBm/EVNQyQMdGXako3oQpJmZohQatWmIMaNaIk7wWVxo+KPf0ChBATRdmGLIqVImEzauCm6SGvaTQuZhpa2tNAyCcRi5t17XMybSZp5k2Rq8MCDx73nnu8959zzvedKPj8kbFEymTSnT/+qSXOjo4ekUlncqimCzRREhGLxnAJks302DMOMc+5poDNWWbbWPpid/atSLi84gEJhv6jqxnZbeey9p1SaURHBWtvtvR9W1QKwF9gJ7IhVHwJ3gTkRKVprpqPI3VFVcrlBMca05/H09O/a0ZHKiMiYc+4o0A/YBNWngF3AgKq+G0XuiohMdHSkTqysVCutHLPZbN8jE9YaisVzaox5MYrcN8BHQDeQvPVHxQDPA6855/uNMZfn56/f27072xT6JmOTk9MqIi97708CB7cImLSBg977k8bIK5OT05qk0Mjp1NR5Nca8qKrH41z+V9njvR43xvRPTZ1X730zcKk0o6lUmPHef7VNoGvA/ZepVJgplWYanhuolYyIUK1GY8CBbQSty4FqNRqr4wBQP3XW2m7gEqBtfi7+FPDxv0/QuxQEtruOuTbHw9RKZr0oMAlcTZi7LSLjIvIpEAF/iMjbwI8Juv3O+eFGqDOZNNlsn43JIalORUROGWMOAt8By2vmlsIwOA0UYy9vqOopEZlNsGNVtZDN9tl0uqs2EobhM8Bsq3CKyAcAXV1PpkTkLeDPeO5qEATPisirwD/AT/FOP25hazbGqh2umHt3bnZCxsffq6rqz9baN0Tka2pUueVLBtgZYzXKqZNV7m0pFy/OkcsNinPudjbb94kx5mhn5xOLbYDviLEei5UACAJbD99jSR14mdots6Hs27eHUmlGg8DuunZt/nPv/cTy8t/pNjbwMMaqAVtrH1DL14YyMfF9KCJvRpH7RVWPUbsQ2vH6boyFGR09JL29PRVgboMFaozZvbS09K2q/gC8FI97YySiVsOs2YRvYWeut7encvjw62IqlUXK5QUnIkVqrNMEqqpHvPdngPdZ7TwAuqrV6DBQiKP3gogcUdWBBDtORIrl8oJbXFxapcyYzi7xf1JmobBfosjdEZGJDcLUSgyrh1Ti//Xl5UVkIorcnUJhv9QXoaqoKmEYnADOtgm8FTkbhsGJOk4DGCCXG5SVlWrFGHMMuLyNoHPGmGMrK9VKLjfYiEQD2BhDPj8k3vsrxsj4NoHPGSMfeu+v5PNDj3ScTcw1MjIs3usFY8w7wBnazznxmjPGmDHv9cLISK6JUpu6TFUlm+2T+fnr91Kp8Dfv9RbQAzzH5hTrgMsi8kUqFX4WRe5GPj+U2NxvqaEPAtvt3PY29LLZ22n9E+bmzVuJT5je3p62njCbvp1UtUEy6XSXL5cX7gP310dnYGCv1NO2GSjAv4O3/3gBFuG+AAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDIxLTAxLTA2VDIzOjE0OjI1KzAwOjAwGxsUjQAAACV0RVh0ZGF0ZTptb2RpZnkAMjAyMS0wMS0wNlQyMzoxNDoyNSswMDowMGpGrDEAAAAASUVORK5CYII='
@@ -584,40 +739,9 @@ vol1_img = 'iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAYAAAA7MK6iAAAABGdBTUEAALGPC/xhBQAA
 
 vol2_img = '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'
 
+save_img = 'iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAMAAAAM7l6QAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAk1BMVEUAAAD///9EREBUVE9FRUEiIiAFBQUCAgICAgJCQj4DAwMBAQEAAAAAAAAAAAAAAAAEBAMGBgUBAQEAAAAAAABHR0ICAgIAAAAAAAACAgIBAQEAAAAAAAACAgEBAQEBAQEBAQEAAAABAQEBAQFTU04FBQUCAgIAAAABAQEBAQEAAAAAAAAAAAAAAABHR0MAAAD////wTUzSAAAAL3RSTlMAAAEBAQMTJTABGVugzuXuGRBr0PwBK7L9LDjR0jmRYmT5R0oBEjO5T1je+sLyAfgOXukAAAABYktHRAH/Ai3eAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH5QMFEQAOAH9OMwAAARNJREFUKM+Nk9mWgjAQRCvskR1UQFQGxV0n//93EyBqAJGphwRyc/p0d6qhvKWikSod4fmhAbphWpZp6IDWw5RgZjuu5/ue69gBCO1ghFE8Z0LzOAoh4QWWScokpUmGxQtjlbOe1hsITLEcUM4z0AaTMGEflISkxhqi9BNOI14fFMxikfC2+OEqtqKEOECNbfFb7tqu7Upx3eZQ1R0Rrdy3ye4FZo5eAYY7hl2DxzK9MeyZHFv+GPataSwHp4TQXnA5NRwO6KbWKex4Oh27hUltOV+ujF0vZ7ktCgLR1Nv9UW+P+01u6sSTTDwot0O2HtL8aQe+bAY8f5mptmI2tOLvf43cjEHwZQwmhqhR1Zqpko7+ANLTVlPFe88SAAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDIxLTAzLTA1VDE3OjAwOjAyKzAwOjAwtVivigAAACV0RVh0ZGF0ZTptb2RpZnkAMjAyMS0wMy0wNVQxNzowMDowMiswMDowMMQFFzYAAAAASUVORK5CYII='
 
-#Upload Images
-#pause_bt_img = PhotoImage(file='Desktop/mp3/buttons/30x30/pause_media_music_player-512.png')
-pause_bt_img = PhotoImage(data=base64.b64decode(pause_img))
-#unpause_bt_img = PhotoImage(file='Desktop/mp3/buttons/30x30/play_pause_media_player_music-512.png')
-unpause_bt_img = PhotoImage(data=base64.b64decode(unpause_img))
-#play_bt_img = PhotoImage(file='Desktop/mp3/buttons/30x30/play_music_media_player-512.png')
-play_bt_img = PhotoImage(data=base64.b64decode(play_img))
-#stop_bt_img = PhotoImage(file='Desktop/mp3/buttons/30x30/stop_music_media_player-512.png')
-stop_bt_img = PhotoImage(data=base64.b64decode(stop_img))
-#prox_bt_img = PhotoImage(file='Desktop/mp3/buttons/30x30/forward_rewind_music_media-512.png')
-prox_bt_img = PhotoImage(data=base64.b64decode(next_img))
-#ante_bt_img = PhotoImage(file='Desktop/mp3/buttons/30x30/rewind_previous_music_media_-512.png')
-ante_bt_img = PhotoImage(data=base64.b64decode(prev_img))
-
-#add_bt_img = PhotoImage(file='Desktop/mp3/buttons/30x30/add_plus_media-512.png')
-add_bt_img = PhotoImage(data=base64.b64decode(add_img))
-#del_bt_img = PhotoImage(file='Desktop/mp3/buttons/30x30/close_exit_media_player-512.png')
-del_bt_img = PhotoImage(data=base64.b64decode(del_img))
-#rep_bt_img = PhotoImage(file='Desktop/mp3/buttons/30x30/repeat_all_music_media_player-512.png')
-rep_bt_img = PhotoImage(data=base64.b64decode(rep_img))
-#rep1_bt_img = PhotoImage(file='Desktop/mp3/buttons/30x30/repeat_one_repeat_music_media_-512.png')
-rep1_bt_img = PhotoImage(data=base64.b64decode(rep1_img))
-#rand_bt_img = PhotoImage(file='Desktop/mp3/buttons/30x30/shuffle_music_media_track-512.png')
-rand_bt_img = PhotoImage(data=base64.b64decode(rand_img))
-
-#vol0 = PhotoImage(file='Desktop/mp3/buttons/30x30/silent_sound_off_media_music-512.png')
-vol0 = PhotoImage(data=base64.b64decode(vol0_img))
-#vol1 = PhotoImage(file='Desktop/mp3/buttons/30x30/sound_down_volume_music_media_-512.png')
-vol1 = PhotoImage(data=base64.b64decode(vol1_img))
-#vol2 = PhotoImage(file='Desktop/mp3/buttons/30x30/sound_up_volume_music_media_-512.png')
-vol2 = PhotoImage(data=base64.b64decode(vol2_img))
-
-img_01 = 'iVBORw0KGgoAAAANSUhEUgAAACAAAAAUCAQAAABGmPfEAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAAmJLR0QA/4ePzL8AAAAJcEhZcwAAAEgAAABIAEbJaz4AAAAHdElNRQflAQcUCRtqYkiRAAACzElEQVQ4y42TX0hkZRjGf+93znjGGVNJDbdohb3YyM3FSxP/oelN7BJLLioxxLIEgUVdbIGiUlAXXkSBEQSBebF0UQYWrBs4uSxEu1hE204ssRJDLIaWuen8OTPne7s44+6MZPRcfbzfc37f8768R7inbvJs8gCGH6hUM058a5Fo82ndSR+4M/ePV7mOV9UrHjMHTH+yGfOPFlv2ajJwOKCGutb1T+fPXEOANk5ynE56AcWiCirCcTroKgO4ANOA5S3khD0laT67w5Ps0CY/VX2Tr3hON3nI+7ai5sIIbyCAwQIK+HikSI8WRhovFG91kETDuLb2zC/n6l4PbnYhKMv7LQi1/fGZR+v3CT6/AZk+/1T28QzL+Puvid/nP/136x7LXKKeBGO4Dp+jRJ/3n7uTxIbGi2FeBbUNR/6aiHyZWyv1AFj7cOP2VGTlkyUAExvznpo16qotOKEp4cRfjJ8fcgAk2GvPje8+UzEJu9Waezl3dtypScQm3b0F8/1HQ6UmATTZlHvNZq8uhjU1YEWlnFA0Gqh8VZt7NWg31lEv45QBKBpEJWc4VAKggcEo/2H7fzImkHwsoCyia1HRqD38IwUQx2IFE0/EJs7fLQNI/2Z0tvqdnp2wJhaMipYDXCuO6OBd793olJu56HKBqaIYJygCsBDwAVxGAHWqvyvMRb7IVaRuTG2/F0m+H/AxuAHPItTNu7cbbqQHQsdZ1lhHRBGzveG/lMVtuj8+Yza27CtZxvgdCf8FRZIks+FeCsRoYZ3q1WJz9OcIA6yUNqyoVat6LJqydCNss7KfaYJJphHMMOrNwQt0coJRafPC+whuEynn14ZH4AmvcqAuwNsA1ODczC5VfZ3nCB9ykpT6+W4iJMsWoIlCvpMIVyoBoXYh9djwYOEaCvwIwK1S54IIiGqpwr8BevDZ8FcR3jxgehCT+SNNNL6rHNQ/aswIpDXuJtQAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjEtMDEtMDdUMjA6MDk6MjArMDA6MDBu8ZIFAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDIxLTAxLTA3VDIwOjA5OjIwKzAwOjAwH6wquQAAAFR0RVh0c3ZnOmJhc2UtdXJpAGZpbGU6Ly8vaG9tZS9kYi9zdmdfaW5mby9zdmcvZDQvZGMvZDRkYzM2OGU1YTQzOTJiNDc1MGM4MTkwMTQwNTdkMzkuc3Zn7QjXCQAAAABJRU5ErkJggg=='
+img_01 = 'iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAQAAAAngNWGAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAAmJLR0QA/4ePzL8AAAAJcEhZcwAACxIAAAsSAdLdfvwAAAAHdElNRQflAwYKAzWYnxerAAAAAW9yTlQBz6J3mgAAAPlJREFUKM+d0zFOAlEQBuDPxbWikIQC0QISKhsbermGJ9Ar2GzrESw5AYkF9NpzBCKFhlC5GrQwqGvBwrJAsTpT/TN//jdv3v/YjlC4XdzLoZaOthqmhu6NdsioiowlazkWqW7Smvo50jL7mnm1jBb73KCuqUar8rsLdxuqUXaFxWwzz16cuZVI/HgyS2dtEaCjAQYufSgpedTz5soANHQWxHaqHJv4QsmDG68m4rTTJhCqrXa63GoiyeGaMFAwAnPTnE6mneGpeYBhCivq9vHt3LVDdZW0M/zjeka6oOzYgVNH6fEnyqCbmaPwExY2RQGb/cO4Wez8Cr/ay5WkVE1FOQAAAFplWElmTU0AKgAAAAgABQESAAMAAAABAAEAAAEaAAUAAAABAAAASgEbAAUAAAABAAAAUgEoAAMAAAABAAIAAAITAAMAAAABAAEAAAAAAAAAAABIAAAAAQAAAEgAAAABH1L3NAAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAyMS0wMy0wNlQxMDowMzo0NSswMDowMEs5llcAAAAldEVYdGRhdGU6bW9kaWZ5ADIwMjEtMDMtMDZUMTA6MDM6NDUrMDA6MDA6ZC7rAAAAF3RFWHRleGlmOllDYkNyUG9zaXRpb25pbmcAMawPgGMAAAAASUVORK5CYII='
 
 img_02 = 'iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAMAAAC6V+0/AAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAn1BMVEUAAABEREBDQz9OTkmMjIQMDAxCQj5zc20CAgIBAQEAAAAAAAAAAAB0dG0EBAQBAQEAAAADAwIAAAAAAABNTUkAAAAAAAAAAAAAAAAAAAAAAAAAAAAHBwYBAQEAAAACAgIDAwMAAAAAAAABAQEAAAAAAACHh38CAgIBAQEAAAANDQxra2UAAABHR0IAAAABAQEAAAAAAABycmsAAAD///9SHUsLAAAAM3RSTlMAAQEBAQYBASVlmbGYARV/3yK0tQHszOfxzeuiDYzDJiGonIH1zgEzZ8QGAZoBuEr9+QF14IKDAAAAAWJLR0Q0qbHp/QAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB+UBBxQeAZKDNX0AAADVSURBVBjTbZGJDoIwEERHzlZOEfG+b7xQ/v/fnLZoMPElhOyjtLNbdIhlA47rOoBtqRp8PPhCdoMglCKCZ6SHOElrTZrEyoKul9Vf+j1aWIhbjjamsv2k/iGJckBwv0ExHI0LMuG+AoDk1+lsvliuyJqFZL4u3xtsd/sx4co6PMANtDyeNGcWQdnICwxXI51QSf+m2rv5G/O7PuiK1koepCPdHw13E8mOGL56NlQM/8pVm/12Q5lqUw2kZTM9kP+jUzYSMtRDfn2GzOvgXA5lyXy5vo43zLknp8p3BzsAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjEtMDEtMDdUMjA6Mjk6NDkrMDA6MDBlameQAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDIxLTAxLTA3VDIwOjI5OjQ5KzAwOjAwFDffLAAAAABJRU5ErkJggg=='
 
@@ -629,22 +753,37 @@ img_05 = 'iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAMAAAC6V+0/AAAABGdBTUEAALGPC/xhBQAAAC
 
 img_06 = 'iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAMAAAC6V+0/AAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAflBMVEUAAABEREBDQz9OTkmMjIQMDAxCQj5zc20CAgIBAQEAAAAAAAAAAAB0dG0EBAQBAQEAAAADAwIAAAAAAABNTUkAAAAAAAAAAAADAwMBAQEAAAABAQADAwMBAQEAAACHh38GBgUAAAANDQwBAQEAAAAAAAAAAABycmsAAAD///+demq5AAAAKHRSTlMAAQEBAQYBASVlmbGYARV/3yK0tQHkt/sek/6TGpGSARCRBpK2/OMBwWijIwAAAAFiS0dEKcq3hSQAAAAJcEhZcwAACxMAAAsTAQCanBgAAAAHdElNRQflAQcUHgGSgzV9AAAAzUlEQVQY022Riw6CMAxFrzw3eUxeQxEEQWX//4W2U8w0NlnSnWXt7S12FJ4PBGEYAL7Hd9CJEAu5T5JUigzRC0bI1cHYOKicKYgVpflEVRCFh9xhRHNCfqzMV6isBgTXa3RrTKsbrisASH7Wx1PXnY+ac0n69py0p34Y+kvLeToiTGylbpima2fTZHbh8IFBar+f++vSL9v3rdGFG93ejRxJd/14S/KzX/FrzWNWLit5TDbEoaU15L91TDMhU2vyuplM6yBfxnkmfbVdxxOebyOyOvpEKQAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAyMS0wMS0wN1QyMDoyOTo0OSswMDowMGVqZ5AAAAAldEVYdGRhdGU6bW9kaWZ5ADIwMjEtMDEtMDdUMjA6Mjk6NDkrMDA6MDAUN98sAAAAAElFTkSuQmCC'
 
-#sound_wave_img = PhotoImage(file='Desktop/mp3/buttons/20x20/65-651653_soundwave-sound-wave-free-png.png')
+#Upload Images
+pause_bt_img = PhotoImage(data=base64.b64decode(pause_img))
+unpause_bt_img = PhotoImage(data=base64.b64decode(unpause_img))
+play_bt_img = PhotoImage(data=base64.b64decode(play_img))
+stop_bt_img = PhotoImage(data=base64.b64decode(stop_img))
+prox_bt_img = PhotoImage(data=base64.b64decode(next_img))
+ante_bt_img = PhotoImage(data=base64.b64decode(prev_img))
+
+add_bt_img = PhotoImage(data=base64.b64decode(add_img))
+del_bt_img = PhotoImage(data=base64.b64decode(del_img))
+rep_bt_img = PhotoImage(data=base64.b64decode(rep_img))
+rep1_bt_img = PhotoImage(data=base64.b64decode(rep1_img))
+rand_bt_img = PhotoImage(data=base64.b64decode(rand_img))
+save_bt_img = PhotoImage(data=base64.b64decode(save_img))
+
+vol0 = PhotoImage(data=base64.b64decode(vol0_img))
+vol1 = PhotoImage(data=base64.b64decode(vol1_img))
+vol2 = PhotoImage(data=base64.b64decode(vol2_img))
+
 sound_wave_img = PhotoImage(data=base64.b64decode(img_01))
-#open_file_img = PhotoImage(file='Desktop/mp3/buttons/20x20/folder_documents_media_browse-512.png')
 open_file_img = PhotoImage(data=base64.b64decode(img_02))
-#paused_img = PhotoImage(file='Desktop/mp3/buttons/20x20/pause_media_music_player-512.png')
 paused_img = PhotoImage(data=base64.b64decode(img_03))
-#stopped_img = PhotoImage(file='Desktop/mp3/buttons/20x20/stop_music_media_player-512.png')
 stopped_img = PhotoImage(data=base64.b64decode(img_04))
-#adding_music_img = PhotoImage(file='Desktop/mp3/buttons/20x20/add_plus_media-512.png')
 adding_music_img = PhotoImage(data=base64.b64decode(img_05))
-#deleting_music_img = PhotoImage(file='Desktop/mp3/buttons/20x20/close_exit_media_player-512.png')
 deleting_music_img = PhotoImage(data=base64.b64decode(img_06))
 
 #Control Buttons Frame
 controle_frame = Frame(janela)
 controle_frame.pack()
+
+
 
 play_button = Button(controle_frame, image=play_bt_img, bd=0, command=lambda: play(playing))
 pause_button = Button(controle_frame, image=pause_bt_img, bd=0, command=lambda: pause(paused))
@@ -657,12 +796,14 @@ del_button = Button(controle_frame, image=del_bt_img, bd=0, command=remove_song)
 repeat_button = Button(controle_frame, image=rep_bt_img, bd=0, command=lambda: repeat_music(re_music))
 repeat_1_button = Button(controle_frame, image=rep1_bt_img, bd=0, command=lambda: repeat_1_music(repeat))
 randon_button = Button(controle_frame, image=rand_bt_img, bd=0, command=lambda: randon(rand))
+save_button = Button(controle_frame, image=save_bt_img, bd=0, command=nova_lista)
 
 ante_button.grid(row=0, column=0, padx=5)
 play_button.grid(row=0, column=1, padx=5)
 pause_button.grid(row=0, column=2, padx=5)
 stop_button.grid(row=0, column=3, padx=5)
 prox_button.grid(row=0, column=4, padx=5)
+save_button.grid(row=0, column=5, padx=5)
 
 add_button.grid(row=1, column=0, padx=5)
 del_button.grid(row=1, column=1, padx=5)
@@ -670,7 +811,26 @@ repeat_button.grid(row=1, column=2, padx=5)
 repeat_1_button.grid(row=1, column=3, padx=5)
 randon_button.grid(row=1, column=4, padx=5)
 
-#Janela menu
+#Volume Control
+volume_button = Button(controle_frame, image=vol2, bd=0, command=lambda: mute(muted))
+volume_button.grid(row=0, column=6, padx=5)
+
+volume_slider = ttk.Scale(controle_frame, from_=0, to=1, orient=HORIZONTAL, value=0.5, command=volume, length=50)
+volume_slider.grid(row=0, column=7, pady=5)
+
+#Song Status Bar
+song_status_frame = Frame(janela, bd=1, relief=GROOVE)
+song_status_frame.pack(fill=X, side=BOTTOM, ipady=2)
+
+song_wave = Label(song_status_frame, image=open_file_img, anchor=W)
+song_wave.pack(side=LEFT)
+song_status = Label(song_status_frame, text='Abrindo arquivo', anchor=W)
+song_status.pack(side=LEFT)
+
+status_bar = Label(song_status_frame, text='', anchor=E)
+status_bar.pack(side=RIGHT)
+
+#Janela de opções
 menu = Menu(janela)
 janela.config(menu=menu)
 
@@ -685,43 +845,17 @@ fileMenu.add_command(label='Remover todas as música', command=remove_all_songs)
 fileMenu.add_separator()
 fileMenu.add_command(label='Sair', command=janela.quit)
 
-playbakMenu = Menu(menu, tearoff=0)
-menu.add_cascade(label='Reproduzir', menu=playbakMenu)
-aprsubMenu = Menu(playbakMenu, tearoff=0)
-playbakMenu.add_cascade(label='Após reprodução', menu=aprsubMenu)
-aprsubMenu.add_command(label='Não fazer nada', command=music_none)
-aprsubMenu.add_command(label='Reproduzir a próxima música', command=menu_next_song)
-aprsubMenu.add_command(label='Fechar programa', command=exit_song)
+playbackMenu = Menu(menu, tearoff=0)
+menu.add_cascade(label='Reproduzir', menu=playbackMenu)
+menu.add_command(label='Lista de reprodução', command=ler_lista)
+posmusicMenu = Menu(playbackMenu, tearoff=0)
+playbackMenu.add_cascade(label='Após reprodução', menu=posmusicMenu)
+posmusicMenu.add_command(label='Não fazer nada', command=music_none)
+posmusicMenu.add_command(label='Reproduzir a próxima música', command=menu_next_song)
+posmusicMenu.add_command(label='Fechar programa', command=exit_song)
 
 helpMenu = Menu(menu, tearoff=0)
 menu.add_cascade(label='Ajuda', menu=helpMenu)
 helpMenu.add_command(label='Instruções', command=instrucao)
-
-song_status_frame = Frame(janela, bd=1, relief=GROOVE)
-song_status_frame.pack(fill=X, side=BOTTOM, ipady=2)
-
-#Song Status Bar
-song_wave = Label(song_status_frame, image=open_file_img, anchor=W)
-song_wave.pack(side=LEFT)
-song_status = Label(song_status_frame, text='Abrindo arquivo', anchor=W)
-song_status.pack(side=LEFT)
-
-status_bar = Label(song_status_frame, text='', anchor=E)
-status_bar.pack(side=RIGHT)
-
-#Time / Song length
-#status_bar = Label(janela, text='', bd=1, relief=GROOVE, anchor=E)
-#status_bar.pack(fill=X, side=BOTTOM, ipady=2)
-
-#Divisoria
-separar_01 = Label(controle_frame, text='')
-separar_01.grid(row=0, column=5, padx=20)
-
-#Volume Control
-volume_button = Button(controle_frame, image=vol2, bd=0, command=lambda: mute(muted))
-volume_button.grid(row=0, column=6, padx=5)
-
-volume_slider = ttk.Scale(controle_frame, from_=0, to=1, orient=HORIZONTAL, value=0.5, command=volume, length=50)
-volume_slider.grid(row=0, column=7, pady=5)
 
 janela.mainloop()
